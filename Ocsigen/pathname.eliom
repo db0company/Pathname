@@ -103,7 +103,7 @@ let string_of_list r list =
 (* Return a new path initialized using a string                               *)
 let new_path_of_string spath =
   let r = spath.[0] = sep.[0]
-  and list = (Str.split (Str.regexp sep) spath) in
+  and list = split spath sep in
   (r, (List.rev list), string_of_list r list)
 
 (* new_path_of_list : ?is_real:bool -> string list -> t                       *)
