@@ -43,7 +43,7 @@ let string_of_list r list =
 (* new_path_of_string : string -> t                                           *)
 (* Return a new path initialized using a string                               *)
 let new_path_of_string spath =
-  let r = spath.[0] = sep.[0]
+  let r = if (String.length spath) = 0 then false else spath.[0] = sep.[0]
   and list = (Str.split (Str.regexp sep) spath) in
   (r, (List.rev list), string_of_list r list)
 
@@ -56,10 +56,16 @@ let new_path_of_list ?is_real:(r=false) list =
 (* Operators                                                                  *)
 (* ************************************************************************** *)
 
+(* list_empty : 'a list -> bool                                               *)
+(* Return true if the list is empty, false otherwise                          *)
+let list_empty = function [] -> true | _  -> false
+
 (* concat : t -> t -> t                                                       *)
 (* Concatenate two paths and return the result                                *)
 let concat (r, l1, s1) (_, l2, s2) =
-  (r, (l2 @ l1), (s1 ^ sep ^ s2))
+  if list_empty l1
+  then (r, l2, s2)
+  else (r, (l2 @ l1), (s1 ^ sep ^ s2))
 
 (* extend : t -> string -> t                                                  *)
 (* Extend path dir, appends the directory to the path                         *)
@@ -70,7 +76,9 @@ let extend path extdir =
 (* Extend path with a filename. Works only with raw filename, not paths.      *)
 (* More efficient than extend.                                                *)
 let extend_file (r, l, s) filename =
-  (r, (filename::l), (s ^ sep ^ filename))
+  if list_empty l
+  then (r, [filename], filename)
+  else (r, (filename::l), (s ^ sep ^ filename))
 
 (* ************************************************************************** *)
 (* Get                                                                        *)
@@ -121,6 +129,4 @@ let no_extension path =
 
 (* is_empty : t -> bool                                                       *)
 (* Check if the path is empty                                                 *)
-let is_empty (_, l, _) = match l with
-  | [] -> true
-  | _  -> false
+let is_empty (_, l, _) = list_empty l
