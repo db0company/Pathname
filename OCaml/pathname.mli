@@ -32,7 +32,7 @@ val new_path : unit -> t
 val new_path_of_string : string -> t
 
 (* Return a new path initialized using a list                                 *)
-val new_path_of_list : string list -> t
+val new_path_of_list : ?is_real:bool -> string list -> t
 
 (* ************************************************************************** *)
 (* Operators                                                                  *)

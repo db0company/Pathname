@@ -9,9 +9,10 @@
 (* Types                                                                      *)
 (* ************************************************************************** *)
 
+(* * True if real path, false if relative path                                *)
 (* * List of each dir names in reverse order                                  *)
 (* * The string representation of the path                                    *)
-type t = (string list * string)
+type t = (bool * string list * string)
 
 (* ************************************************************************** *)
 (* Values                                                                     *)
@@ -23,7 +24,7 @@ let sep = Filename.dir_sep
 
 (* empty : t                                                                  *)
 (* An empty path                                                              *)
-let empty = ([], "")
+let empty = (false, [], "")
 
 (* ************************************************************************** *)
 (* Constructors                                                               *)
@@ -33,17 +34,23 @@ let empty = ([], "")
 (* Return a new empty path                                                    *)
 let new_path () = empty
 
+(* string_of_list : bool -> string list -> string                             *)
+(* Return a string of the list, taking into account if it is real or relative *)
+let string_of_list r list =
+  let str_ = String.concat sep list in
+  if r then sep ^ str_ else str_
+
 (* new_path_of_string : string -> t                                           *)
 (* Return a new path initialized using a string                               *)
 let new_path_of_string spath =
-  let dirlist = (Str.split (Str.regexp sep) spath) in
-  let dirstr = String.concat sep dirlist in
-  ((List.rev dirlist), dirstr)
+  let r = spath.[0] = sep.[0]
+  and list = (Str.split (Str.regexp sep) spath) in
+  (r, (List.rev list), string_of_list r list)
 
-(* new_path_of_list : string list -> t                                        *)
+(* new_path_of_list : ?is_real:bool -> string list -> t                       *)
 (* Return a new path initialized using a list                                 *)
-let new_path_of_list lpath =
-  (List.rev lpath, String.concat sep lpath)
+let new_path_of_list ?is_real:(r=false) list =
+  (r, List.rev list, string_of_list r list)
 
 (* ************************************************************************** *)
 (* Operators                                                                  *)
@@ -51,8 +58,8 @@ let new_path_of_list lpath =
 
 (* concat : t -> t -> t                                                       *)
 (* Concatenate two paths and return the result                                *)
-let concat (l1, s1) (l2, s2) =
-  ((l2 @ l1), (s1 ^ sep ^ s2))
+let concat (r, l1, s1) (_, l2, s2) =
+  (r, (l2 @ l1), (s1 ^ sep ^ s2))
 
 (* extend : t -> string -> t                                                  *)
 (* Extend path dir, appends the directory to the path                         *)
@@ -62,8 +69,8 @@ let extend path extdir =
 (* extend_file : t -> string -> t                                             *)
 (* Extend path with a filename. Works only with raw filename, not paths.      *)
 (* More efficient than extend.                                                *)
-let extend_file (l, s) filename =
-  ((filename::l), (s ^ sep ^ filename))
+let extend_file (r, l, s) filename =
+  (r, (filename::l), (s ^ sep ^ filename))
 
 (* ************************************************************************** *)
 (* Get                                                                        *)
@@ -71,11 +78,11 @@ let extend_file (l, s) filename =
 
 (* to_string : t -> string                                                    *)
 (* Return a string corresponding to the path                                  *)
-let to_string (l, s) = s
+let to_string (r, l, s) = s
 
 (* to_list : t -> string list                                                 *)
 (* Return a list of strings corresponding to the path                         *)
-let to_list (l, s) = List.rev l
+let to_list (_, l, s) = List.rev l
 
 (* ************************************************************************** *)
 (* Tools                                                                      *)
@@ -83,16 +90,16 @@ let to_list (l, s) = List.rev l
 
 (* filename : t -> string                                                     *)
 (* Return the filename without the rest of the path                           *)
-let filename (l, _) = List.hd l
+let filename (_, l, _) = List.hd l
 
 (* parent : t -> t                                                            *)
 (* Return the path without the last element                                   *)
 (* Example: "foo/bar/baz" -> "foo/bar"                                        *)
-let parent (l, _) =
+let parent (r, l, _) =
   let new_list = match l with
     | h::t	-> t
     | []	-> [] in
-  (new_list, String.concat sep (List.rev new_list))
+  (r, new_list, string_of_list r (List.rev new_list))
 
 (* extension : t -> string                                                    *)
 (* Return the extansion of the given filename                                 *)
@@ -114,6 +121,6 @@ let no_extension path =
 
 (* is_empty : t -> bool                                                       *)
 (* Check if the path is empty                                                 *)
-let is_empty (l, _) = match l with
+let is_empty (_, l, _) = match l with
   | [] -> true
   | _  -> false
